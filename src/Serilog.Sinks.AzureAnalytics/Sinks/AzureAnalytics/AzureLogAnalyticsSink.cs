@@ -45,6 +45,7 @@ namespace Serilog.Sinks
         private readonly JsonSerializer _jsonSerializer;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private static readonly HttpClient Client = new HttpClient();
+        private readonly IExceptionConverter _exceptionConverter;
 
         internal AzureLogAnalyticsSink(string workSpaceId, string authenticationId, ConfigurationSettings settings) :
             base(settings.BatchSize, settings.BufferSize)
@@ -56,6 +57,7 @@ namespace Serilog.Sinks
             _logName             = settings.LogName;
             _storeTimestampInUtc = settings.StoreTimestampInUtc;
             _formatProvider      = settings.FormatProvider;
+            _exceptionConverter = settings.ExceptionConverter;
 
             switch (settings.PropertyNamingStrategy) {
                 case NamingStrategy.Default:
@@ -114,7 +116,8 @@ namespace Serilog.Sinks
             IFormatProvider formatProvider,
             int logBufferSize = 25_000,
             int batchSize = 100,
-            AzureOfferingType azureOfferingType = AzureOfferingType.Public) : this(
+            AzureOfferingType azureOfferingType = AzureOfferingType.Public,
+            IExceptionConverter exceptionConverter = null) : this(
             workSpaceId,
             authenticationId,
             new ConfigurationSettings
@@ -125,7 +128,8 @@ namespace Serilog.Sinks
                 BufferSize             = logBufferSize,
                 BatchSize              = batchSize,
                 LogName                = logName,
-                PropertyNamingStrategy = NamingStrategy.Default
+                PropertyNamingStrategy = NamingStrategy.Default,
+                ExceptionConverter = exceptionConverter
             }) { }
 
         #region ILogEvent implementation
@@ -146,7 +150,7 @@ namespace Serilog.Sinks
 
             foreach (var logEvent in logEventsBatch) {
                 var jsonString = JsonConvert.SerializeObject(
-                    JObject.FromObject(logEvent.Dictionary(_storeTimestampInUtc, _formatProvider), _jsonSerializer)
+                    JObject.FromObject(logEvent.Dictionary(_storeTimestampInUtc, _formatProvider, _exceptionConverter), _jsonSerializer)
                            .Flaten(),
                     _jsonSerializerSettings);
 
