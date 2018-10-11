@@ -11,6 +11,7 @@ namespace Serilog.Sinks.AzureAnalytics
         public IFormatProvider FormatProvider;
         public AzureOfferingType AzureOfferingType = AzureOfferingType.Public;
         public NamingStrategy PropertyNamingStrategy = NamingStrategy.Default;
+        public IExceptionConverter ExceptionConverter;
 
         public int BufferSize
         {

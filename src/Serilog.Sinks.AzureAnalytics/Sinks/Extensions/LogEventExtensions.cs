@@ -18,6 +18,7 @@ using System.Dynamic;
 using System.Linq;
 using Newtonsoft.Json;
 using Serilog.Events;
+using Serilog.Sinks.AzureAnalytics;
 
 namespace Serilog.Sinks.Extensions
 {
@@ -31,9 +32,10 @@ namespace Serilog.Sinks.Extensions
         internal static IDictionary<string, object> Dictionary(
             this LogEvent logEvent,
             bool storeTimestampInUtc = false,
-            IFormatProvider formatProvider = null)
+            IFormatProvider formatProvider = null,
+            IExceptionConverter exceptionConverter = null)
         {
-            return ConvertToDictionary(logEvent, storeTimestampInUtc, formatProvider);
+            return ConvertToDictionary(logEvent, storeTimestampInUtc, formatProvider, exceptionConverter);
         }
 
         internal static string Json(this IReadOnlyDictionary<string, LogEventPropertyValue> properties)
@@ -61,7 +63,8 @@ namespace Serilog.Sinks.Extensions
         private static dynamic ConvertToDictionary(
             LogEvent logEvent,
             bool storeTimestampInUtc,
-            IFormatProvider formatProvider = null)
+            IFormatProvider formatProvider = null,
+            IExceptionConverter exceptionConverter = null)
         {
             var eventObject = new ExpandoObject() as IDictionary<string, object>;
             eventObject.Add(
@@ -72,7 +75,7 @@ namespace Serilog.Sinks.Extensions
 
             eventObject.Add("LogLevel", logEvent.Level.ToString());
             eventObject.Add("LogMessage", logEvent.RenderMessage(formatProvider));
-            eventObject.Add("LogException", logEvent.Exception);
+            eventObject.Add("LogException", exceptionConverter != null ? exceptionConverter.Convert(logEvent.Exception) : logEvent.Exception);
             eventObject.Add("LogProperties", logEvent.Properties.Dictionary());
 
             return eventObject;
